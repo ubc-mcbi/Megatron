@@ -20,7 +20,11 @@ function megatron_theme() {
       'variables' => array('element' => NULL)    
     ),
     'megatron_links' => array(
-      'variables' => array('links' => array(), 'attributes' => array(), 'heading' => NULL),
+      'variables' => array(
+        'links' => array(), 
+        'attributes' => array(), 
+        'heading' => NULL
+      ),
     ),
     'megatron_btn_dropdown' => array(
       'variables' => array('links' => array(), 'attributes' => array(), 'type' => NULL),
@@ -57,6 +61,26 @@ function megatron_preprocess_search_block_form(&$vars) {
 }
 
 
+/**
+ * Override or insert variables into the page template for HTML output.
+ */
+/*function megatron_process_html(&$variables) {
+  // Hook into color.module.
+  if (module_exists('color')) {
+    _color_html_alter($variables);
+  }
+}*/
+
+/**
+ * Override or insert variables into the page template.
+ */
+/*function megatron_process_page(&$variables) {
+  // Hook into color.module.
+  if (module_exists('color')) {
+    _color_page_alter($variables);
+  }
+}*/
+
 
 /** HTML.TPL.PHP PREPROCESS VARIABLES
 ---------------------------------------------------------- */
@@ -89,17 +113,17 @@ function megatron_preprocess_html(&$vars) {
     //Uses RDFa attributes if the RDF module is enabled
     //Lifted from Adaptivetheme for D7, full credit to Jeff Burnz
     // Add rdf info
+    $vars['doctype'] = '<!DOCTYPE html>' . "\n";
+    $vars['rdf'] = new stdClass;
+    $vars['rdf']->version = '';
+    $vars['rdf']->namespaces = '';
+    $vars['rdf']->profile = '';
+
      if (module_exists('rdf')) {
        $vars['doctype'] = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML+RDFa 1.1//EN">' . "\n";
        $vars['rdf']->version = 'version="HTML+RDFa 1.1"';
        $vars['rdf']->namespaces = $vars['rdf_namespaces'];
        $vars['rdf']->profile = ' profile="' . $vars['grddl_profile'] . '"';
-     } else {
-       $vars['doctype'] = '<!DOCTYPE html>' . "\n";
-       $vars['rdf'] = new stdClass;
-       $vars['rdf']->version = '';
-       $vars['rdf']->namespaces = '';
-       $vars['rdf']->profile = '';
      }
 
      // Add js libraries and scripts
@@ -246,16 +270,17 @@ function megatron_preprocess_page(&$variables) {
     
     // Build list
     $variables['primary_nav'] = theme('megatron_links', array(
-      'links' => $variables['main_menu'],
-      'attributes' => array(
-        'id' => 'main-menu',
-        'class' => array('nav'),
-      ),
       'heading' => array(
         'text' => t('Main menu'),
         'level' => 'h2',
         'class' => array('element-invisible'),
       ),
+      'links' => $variables['main_menu'],
+      'attributes' => array(
+        'id' => 'main-menu',
+        'class' => array('nav'),
+      ),
+      
     ));
   }
 }
@@ -343,14 +368,13 @@ function megatron_menu_navigation_links($tree, $lvl = 0) {
         );
     	  
     	  // Don't use levels deeper than 1
-    	  if($lvl < 1)
-    		$new_item['below'] = megatron_menu_navigation_links($item['below'], $lvl+1);
-    	  
+    	  if($lvl < 1) {
+    		  $new_item['below'] = megatron_menu_navigation_links($item['below'], $lvl+1);
+    	  }
     	  $result['menu-'. $item['link']['mlid'] . $class . ' ' .$classtwo] = $new_item;
     	}
     }
   }
-  
   return $result;
 }
 
@@ -383,22 +407,23 @@ function megatron_megatron_btn_dropdown($variables) {
   $type_class = '';
   
   // Type class
-  if(isset($variables['type']))
-	$type_class = ' btn-'. $variables['type'];
+  if(isset($variables['type'])) {
+	  $type_class = ' btn-'. $variables['type'];
+  }
   
   // Start markup
   $output = '<div'. drupal_attributes($variables['attributes']) .'>';
   
   // Add as string if its not a link
   if(is_array($variables['label'])) {
-	$output .= l($variables['label']['title'], $$variables['label']['href'], $variables['label']);
+	  $output .= l($variables['label']['title'], $$variables['label']['href'], $variables['label']);
   }
   
   $output .= '<a class="btn '. $type_class .' dropdown-toggle" data-toggle="dropdown" href="#">';
   
   // Its a link so create one
   if(is_string($variables['label'])) {
-	$output .= check_plain($variables['label']);
+	  $output .= check_plain($variables['label']);
   }
   
   // Finish markup 	
@@ -414,6 +439,7 @@ function megatron_megatron_btn_dropdown($variables) {
 
 /** THEME MENU UNORDERED LIST MARKUP
 theme all sets of links
+-- you can override this for specific menus with megatron_menu_tree__menu_name
 ---------------------------------------------------------- */
 function megatron_menu_tree(&$variables) {
   return '<ul class="menu nav bootstrap-sidenav">' . $variables['tree'] . '</ul>';
@@ -502,7 +528,6 @@ Implements theme_button().
 ---------------------------------------------------------- */
 function megatron_button($variables) {
   $element = $variables['element'];
-  //$label = check_plain($element['#value']);
   $element['#attributes']['type'] = 'submit';
   element_set_attributes($element, array('id', 'name', 'value'));
   $element['#attributes']['class'][] = 'form-' . $element['#button_type'];
@@ -765,7 +790,7 @@ function megatron_megatron_links($variables) {
 
   if (count($links) > 0) {
     $output = '';
-    $output .= '<ul' . drupal_attributes($attributes) . '>';
+    
     
     // Treat the heading first if it is present to prepend it to the list of links.
     if (!empty($heading)) {
@@ -774,15 +799,20 @@ function megatron_megatron_links($variables) {
         $heading = array(
           'text' => $heading,
           // Set the default level of the heading. 
-          'level' => 'li',
+          //'level' => 'li',
         );
       }
-      $output .= '<' . $heading['level'];
+      $output .= '<h3';
       if (!empty($heading['class'])) {
         $output .= drupal_attributes(array('class' => $heading['class']));
       }
-      $output .= '>' . check_plain($heading['text']) . '</' . $heading['level'] . '>';
+      $output .= '>' . check_plain($heading['text']) . '</h3>';
     }
+    
+    $output .= '<ul' . drupal_attributes($attributes) . '>';
+    
+    $num_links = count($links);
+    $i = 1;
 
 	
     foreach ($links as $key => $link) {
